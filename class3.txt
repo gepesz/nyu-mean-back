@@ -1,0 +1,230 @@
+CLASS #3
+
+1. Intro
+- inside any method, 'this' points to the closest object enclosing the method
+- if i have a json object with a function, inside the function, 'this' points to the json object
+- if i have a global function, 'this' points to the global 'window' object
+- but every function has a method 'call' which we can use to manipulate what 'this' means inside the function:
+
+var foo = {
+	bar: "hello world",
+	sayHi: function() {
+		console.log(this.bar);
+	}
+}
+
+foo.sayHi(); 							<= calls the function
+foo.sayHi.call({ bar: "goodbye" });		<= calling it this way, 'this' point to { bar: "goodbye" } now
+
+
+2. Objects
+- when you use the 'new' keyword on a function, you get an object back
+- since i get an object back, inside the Object's code, 'this' now points to the thing that we are creating
+- if i just simply call the function WITHOUT the 'new', then 'this' again points to the global window object,
+  so this.something will attach 'something' onto the global window object!
+- when JS objects have constructors, the convention is to capitalize them
+- if i call an unexisting property on an object, we have an 'undefined'
+- if i call an unexisting function on an object, we have runtime js error
+- primitives get copied by value, objects get copied by reference:
+	=> so if i change an input object later, the newly created object's reference is also updated now
+
+function Foo(b) {
+	this.counter = 0;
+	this.bar = b;
+
+	this.sayHi = function() {
+		console.log(this.bar);
+		this.counter++;
+	}
+}
+
+var f1 = new Foo(42);
+var f2 = new Foo(18);
+var f3 = new Foo(7);
+var f4 = Foo(3);		<= this will attach 'bar' onto window, so window.bar = 3
+
+
+function Person(f, l) {
+	this.firstName = f;
+	this.lastName = l;
+
+	this.fullName = function() {
+		return this.firstName + " " + this.lastName;
+	}
+}
+
+var prof = new Person("Eric", "Katz");
+console.log(prof.fullName());
+
+var owen = new Person("Owen", "Katz");
+console.log(owen.fullName());
+
+console.log(prof.fullName == owen.fullName);	<= returns false, because 2 different functions on different objects
+
+- good practice: instead of passing arguments one-by-one to an object, couple them up into a 'config' object:
+function Person(config) {
+	this.firstName = config.firstName;
+	this.lastName = config.lastName;
+	this.middleInitial = config.middleInitial;
+	...
+}
+
+
+3. Prototypes
+- js allows to prototype objects: this is how objects share methods
+- this is how you share behavior
+- eg: Person.prototype = { ... }  <= means whatever is here will apply to (be the same) on every object
+- prototypes are helpful because you don't re-create the functions on each object but rather they share the same one
+
+function Person(f, l) {
+	this.firstName = f;
+	this.lastName = l;
+
+	this.fullName = function() {
+		return this.firstName + " " + this.lastName;
+	}
+}
+
+Person.prototype = {
+	fullName: function() {
+		return this.firstName + " " + this.lastName;
+	},
+	sayHi: function() {
+		console.log("Hello my name is " + this.fullName());
+	}
+}
+
+console.log(prof.fullName == owen.fullName);	<= returns true now, because 2 different objects share the same function prototype
+
+
+4. C9
+- probably has a global .gitignore:
+	=> ignore all node modules
+	=> ignore the .c9 directory (which gets recreated if we delete it by mistake)
+- git by default works on files.. so an empty dir will not be added
+- associating C9 with your github account:
+	=> cd ~/.ssh
+	=> id_rsa.pub: the public key that both me on C9 & github have
+	=> Dashboard's 'Show my ssh key': shows the contents of id_rsa.pub
+	=> on github.com: you can generate new 'SSH Keys':
+		* copy/paste the 'ssh-keygen' command straight into the C9 console to regenerate the id_rsa keys
+		* this will generate the files (ie will generate the keys for me)
+		* copy/paste the public id_rsa.pub straight back into github
+- how to copy somebody's project:
+	=> git clone git@github...
+	=> delete .git directory
+	=> move all files under the project name up to the root level
+	=> delete the now empty project name folder
+	=> git init
+	=> git add .
+	=> git commit -m "initial commit"
+	=> git add remote origin MYGITHUB
+	=> git push -u origin master
+
+
+5. Test driven development
+describe("Person", function() {
+	it("exists", function() {
+		expect(Person).toBeDefined();
+	});
+
+	describe("creating" function() {
+		describe("with first name of Peter and last name of Szocs", function() {
+			var person, fullName;
+			beforeEach(function() {
+				person = new Person("Peter", "Szocs");	// now this gets executed independently before each it() call!
+				fullName = person.fullName();
+			})
+
+			it("has firstName of Peter", function() {
+				expect(Person.firstName).toEqual("Peter");
+			});
+			it("has lastName of Szocs", function() {
+				expect(Person.lastName).toEqual("Szocs");
+			});
+			it("has fullName of Peter Szocs", function() {
+				expect(fullName).toEqual("Peter Szocs");
+			});
+		});
+	});
+});
+
+describe("PersonDB" function() {
+	var personDB;
+	var prof, owen;
+	beforeEach(function() {
+		prof = new Person(1, "Eric", "Katz");
+		owen = new Person(2, "Owen", "Katz");
+		personDB = new PersonDB([prof, owen]);
+	});
+
+	describe("#getPeople", function() {
+		it("returns two people", function() {
+			expect(personDB.getPeople().length).toEqual(2);
+		})
+	});
+
+	describe("#getPersonById", function() {
+		describe("with an id of 1", function() {
+			it("returns prof", function() {
+				expect(personDB.getPersonById(1).firstName).toEqual("Eric");
+			});
+		});
+	});
+});
+
+function PersonDB(people) {
+	this.people = people;
+};
+
+PersonDB.prototype = {
+	getPeople: function() {
+		return this.people;
+	},
+	getPersonById: function(id) {
+		return this.people[id];
+	}
+};
+
+
+6. Bower
+- bower: npm for client side js libraries
+- go with the default settings: creates a bower.json (same as package.json for npm)
+- bower install lodash --dev:
+	=> installs the lodash client side js library
+- make sure to include the lodash.js in the karma.conf.js files: [...] array!
+
+
+7. Tips
+- mkdir app/    <= app files
+	=> person.js
+- mkdir spec/   <= spec files
+	=> person_spec.js
+- karma.conf.js:
+	=> app/**/*.js     <= all app files should be included
+	=> spec/*_spec.js  <= all spec files should be included
+- npm install karma --save-dev (again to only need karma for dev, not production deployment)
+- npm install karma-story-reporter --save-dev
+- use beforeEach() to re-initialize the test objects fresh before each test case
+- use underscore/lodash js library to iterate thru collections:
+	=> getPersonById: function(id) {
+		return _.find(this.people, {id: id});
+	}
+- lodash.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

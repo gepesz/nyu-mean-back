@@ -1,0 +1,121 @@
+CLASS #4
+
+1. Intro
+- primitives get passed by value, objects get passed by reference
+
+function createNew(o) {
+	o = {};
+}
+
+function addMonth(d) {
+	d.setMonth(d.getMonth() + 1);	// changes d
+}
+
+function addMonth2(d) {				// this does NOT change the object as I can't reassign the reference
+	d = new Date(d.getFullYear(), d.getMonth() + 2, d.getDate());
+	console.log(d.toString());		// prints Sep 14, 2015
+}
+
+var today = new Date();				// June 14, 2015
+addMonth(today);
+console.log(today.toString());		// today is now changed: July 14, 2015
+
+addMonth2(today);
+console.log(today.toString());		// same as before, prints July 14, 2015
+
+
+2. Project #1
+- we'll have to create 3 functions:
+	=> Thing, Person, MyWorldService
+- to start and cut scope: simply return in the middle of my_world_service_spec.js
+- i could even start putting the stuff on top of the spec file, just to get things going:
+function Thing() {}
+function Person() {}
+function MyWorldService() {}
+
+
+3. Node
+- Node is running on the server side
+- it's equivalent to any 'platform' that runs on the server: Java, Ruby, whatever
+- it's running inside a V8 server on the server side
+- Node has many libraries to read files or do whatever on the server side
+- comes with a CLI: 'node'
+	=> node foo.js: simply runs the .js file on the server side
+- one of the node objects is the 'http' object, with which we can create a web server
+- another object is the Request object, which is how requests come in
+- var fs = require("fs");	<== by convention you call the variable the same as the package name
+- require() is looking for the modules already installed, or for files inside node-module/
+- node is just one process, so any other process that needs to be spun off gets spun off 
+  as a separate process asynch:
+    => the callback function is what gets called after the asynch process has finished
+    => all callbacks have the foll format: function(err, data) {}
+- you can specify the format of the callback before the callback:
+	=> that way you don't need to write data.toString():
+
+var fs = require("fs");
+fs.readFile("bar.txt", "utf-8", function(err, data) {
+    if (err) {
+        console.log(err);
+    } else {
+        console.log(data)
+    }
+});	
+
+
+4. Nodemon
+- nodemon: utility that monitors our source files and restarts our server when needed
+- npm install -g nodemon:
+	=> the -g flag indicates to install it globally, not just for current workspace
+- nodemon foo.js:
+	=> will be monitoring foo.js for changes
+- it's a package that starts the 'node' CLI for a source file every time it changes
+
+
+5. Jamine-node
+- automated testing framework built into node
+- just like karma, but this is built into node
+- to install:  npm install jasmine-node -g
+- to run:      jasmine-node spec/
+- to autorun:  jasmine-node spec/ --autotest --verbose --color --watch *.js
+	=> --autotest: means rerun the thing if the spec.js file changes
+	=> --watch:    means rerun the thing if the app files change
+
+
+6. Modules
+- require() is looking for the modules already installed, or for files inside node-module/
+- the way you expose a function for the outside is via the module.exports:
+	=> module.exports = {
+		generate: function() {...}
+	}
+	=> module.exports is what gets loaded when you say require("MODULE_NAME")
+- you can put other functions inside the module file outside of module.exports:
+	=> doesn't matter where you put them of course
+- so instead it's cleaner to structure the module this way:
+
+module.exports = {
+	generate: generate,
+	otherFunc: otherFunc
+};
+
+function generate(a, b) {...}
+function otherFunc(args) {...}
+
+- now it's clear that this is just a key/value pair of things:
+	=> keys are strings
+	=> values are objects (functions)
+
+- but when i create an object (eg: Person), then i can make module.exports to simply equal the new object:
+	=> module.exports = Person;		<= means we are exposing the Person object's constructor to module.exports
+
+- another quirk is if you do NOT want to use the 'new' keyword, so for example:
+	=> var person = Person("Eric", "Katz");		<= when the 'new' is missing when creating an object, it's called the factory method
+	=> now i can fix this like this:
+		* module.exports = function(firstName, lastName) {
+			return new Person(firstName, lastName);
+		};
+
+
+
+
+
+

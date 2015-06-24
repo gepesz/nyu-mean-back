@@ -1,0 +1,95 @@
+CLASS #2
+
+1. Intro
+- every function has a return type, if nothing specified then it's 'undefined'
+- every function is an object
+- since every function is an object, you can pass them around, just as if they were regular objects
+- you can create a function two ways:
+	=> function myFunction() {...}
+	=> var myFuncton = function() {...}
+- jsbin.com: tool to experiment with web languages: html, css, javascript, sass
+- node --version: to check whether node was installed
+- js function names are case sensitive: sayHi() vs SAYHI()
+- primitives get passed by value, objects get passed by reference
+
+
+2. Karma setup
+- karma is a js test tool: runs/tests functions in a test runner
+- how to install: npm install karma
+- karma init:
+	=> creates the 'karma.conf.js' karma config file, after which we can run 'karma start'
+	=> Which testing framework to use?            jasmine
+	=> Do you want to use Require.js?             no
+	=> What browser to use?                       PhantomJS
+	=> What's the location of your files?         spec.js
+	=> Should any files be excluded?              <leave it as empty string>
+	=> Watch all the files & run tests on change? yes
+- after 'karma init', now we can run 'karma start'
+- if you manually edit karma.conf.js, you must restart karma (ie: stop and karma start)
+	=> eg: Ctrl+C, karma start
+- karma loads jasmine, the testing framework
+- http://karma-runner.github.io/0.12/index.html
+
+
+3. Jasmine
+- describe():
+	=> this is how you start a test suite
+	=> format: describe(TEST_SUITE_NAME, FUNCTION_TO_EXECUTE)
+- it():
+	=> this is how you define a unit test (aka spec)
+	=> format: it(TEST_NAME, FUNCTION_TO_EXECUTE)
+- expect():
+	=> this is how you define your expectations
+	=> format: expect(SOMETHING).TOBESOMETHING
+- 
+- http://jasmine.github.io/
+
+
+4. Karma story reporter
+- npm install karma-story-reporter
+- just a prettifier: gives a nicer format for the karma unit test results
+- probably should be built into karma by default
+- to enable it: edit karma.conf.js:
+	=> reporters: ['story'],
+- https://www.npmjs.com/package/karma-story-reporter
+
+
+5. npm
+- npm list --depth 0 --global true: shows all currently installed packages
+- npm init: create a node package file, which just saves all currently installed node packages into a .json file
+	=> creates package.json
+- npm install: installs all node modules needed for a given project (all modules inside a package.json file)
+	=> so if i clone a repository with a package.json cloned, i simply do npm install to get all node modules up and running
+	=> either installs the specified module, or reads all modules from package.json
+- npm init karma --save-dev: not only installs karma, but also updates package.json
+
+
+6. Testing
+- good practice to have:
+	=> file.js:      the file that contains the code
+	=> file_spec.js: the file that contains the unit tests
+- now on 'karma init', you HAVE TO specify the files in this order:
+	=> file.js, file_spec.js
+	=> so that the definitions get loaded first
+	=> gets listed in this order in karma.conf.js
+- /* globals describe it expect FizzBuzz */:
+	=> add this into the top of the _spec.js to get rid off the annoying warnings!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
