@@ -44,7 +44,7 @@ function MyWorldService() {}
 - one of the node objects is the 'http' object, with which we can create a web server
 - another object is the Request object, which is how requests come in
 - var fs = require("fs");	<== by convention you call the variable the same as the package name
-- require() is looking for the modules already installed, or for files inside node-module/
+- require() is looking for the modules already installed, or for files inside node-modules/
 - node is just one process, so any other process that needs to be spun off gets spun off 
   as a separate process asynch:
     => the callback function is what gets called after the asynch process has finished
@@ -75,14 +75,16 @@ fs.readFile("bar.txt", "utf-8", function(err, data) {
 - automated testing framework built into node
 - just like karma, but this is built into node
 - to install:  npm install jasmine-node -g
-- to run:      jasmine-node spec/
+- to run:
+	=> jasmine-node foo_spec.js <= run a single file
+	=> jasmine-node spec/       <= run a whole folder
 - to autorun:  jasmine-node spec/ --autotest --verbose --color --watch *.js
 	=> --autotest: means rerun the thing if the spec.js file changes
 	=> --watch:    means rerun the thing if the app files change
 
 
 6. Modules
-- require() is looking for the modules already installed, or for files inside node-module/
+- require() is looking for the modules already installed, or for files inside node-modules/
 - the way you expose a function for the outside is via the module.exports:
 	=> module.exports = {
 		generate: function() {...}

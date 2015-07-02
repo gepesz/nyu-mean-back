@@ -1,0 +1,28 @@
+CLASS #5
+
+1. Intro
+- c9.io: split pane into 2 to see both the test output & the source file at the same time
+- init trick:
+	=> config.things = config.things || [];	<== this is how you say use things if it's defined, otherwise empty array
+- how to test for throw: wrap it inside a function:
+    expect(function() {
+        service.acquireThing("Moe", "Rock");
+    }).toThrow();
+- array.splice(index, howMany):
+	=> removes (modified in place!) 'howMany' nof items from array starting at 'index'
+- hoisting: a javascript property that you can move functions around and JS understands it
+- jsbin.com: you can add any library (eg: lowdash) via 'Add library' in the menu
+
+
+2. Node modules
+- npm test:
+	=> echos out whatever is in package.json file's "scripts.test" value
+	=> eg:  "scripts": {
+                "test": "jasmine-node foo_spec.js --autotest --verbose --color --watch *.js"
+            },
+    => eg:  "scripts": {
+                "test": "jasmine-node spec/ --autotest --watch **/*.js --color --verbose --captureExceptions"
+             },
+- jasmine-node has a --captureExceptions option:
+    => this reports any exceptions in my files
+    

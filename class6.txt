@@ -1,0 +1,153 @@
+CLASS #6
+
+1. Intro
+- topics today:
+	=> callbacks, which leads to promises
+	=> mongo, mongoose, callbacks/promises
+- module.exports is what's public, the rest of the functions are private inside the module
+- tip: bigtextbox.com: to put something up using a big font
+- files: nyu-mean-back-class-6
+
+
+2. Callbacks
+- callbacks are just another argument to an existing function
+- instead of returning something, the existing function calls the callback with the result
+- this is how you write code with callbacks:
+
+ foo.doSomething("bar", function(_result) {
+     console.log(_result);
+ });
+
+- the problem with callbacks is that 'this' no longer refers to what it used to refer to
+    => the node processor reassigns 'this' to the main window object
+    => so this is where we use 'that' instead of 'this'
+- setTimeout() is a great example where both 'this' gets reassigned & we have asynch timing
+- but now the test still fails because the beforeEach, then each test case runs, it doesn't wait!
+- what we need to do is to tell beforeEach() to wait until my callback is done:
+    => this is done by using the function that gets passed to beforeEach()
+    => this function is usually called 'done'
+    => we must call this function explicitly after we are ready to proceed:
+          beforeEach(function(done) {
+             var foo = new Foo("bizz");
+             foo.doSomething("bar", function(_result) {
+                 console.log(_result);
+                 result = _result;
+                 done();
+             });
+          });
+- if you have more than one asynch calls: you need to do the bookkeeping yourself:
+    => use a counter or something and call done() when finished
+    => or you could use an asynch library to manage that for you
+    => better yet: use promises
+
+
+3. Promises
+- often the callback returns 2 params: error & result
+- but on error we want to throw... so how are we going to handle that when we have a callback?
+- would be nice do this in jasmine-node using then():
+    => foo.doSomething("bar").then(function(_result) { ... }
+- and similarly: would be nice do this in jasmine-node using catch() on exceptions:
+    => foo.doSomething("bar").catch(function(_error) { ... }
+- this is where promises comes in
+- a promise either resolves a valid result, or rejects an invalid (error) result
+- we need to install the Q library from node for promises:
+    => npm install q --save: you need to install the q library for promises
+- you need 4 things for promises:
+    => var dfd = Q.defer();        <= create the defer object
+    => dfd.reject("BAD is bad");   <= reject the input (with the error message specified in reject)
+    => dfd.resolve(result);        <= resolve the input (copies result into the promise)
+    => return dfd.promise;         <= return the promise
+- using promises, the app code returns a promise not the direct result
+- the client of the promise must use .then() or .catch() to do something with that returned promise
+    => so the client code also changes
+
+
+4. MongoDB
+- works very well with Node because it stores the data in JSON format
+- in the end we want JS objects on the client
+- mongod:
+    => this is how you start the db
+    => starts the mongo process (daemon)
+    => gives you a port number
+    => mongod --nojournal: means don't keep track of changes (uses less memory)
+- mongo: start interacting with mongod on the console (CLI for mongoDB):
+    => you can see on the mongod window that the nof connections went up
+    => anything i do here will be recorded to disk so i have everything next time also
+- useful mongo commands:    
+    => show dbs: shows databases
+    => use my_world: create the my_world database
+    => show collections: shows you the tables (collections)
+    => db.things.insert({name: 'paper'}): this is how i create a collection called 'things'
+    => db.things.find(): show me all objects in 'things' collection
+    => db.things.find({name: 'rock'}): find an object with name 'rock' (case sensitive!)
+    => db.things.find({$query: {}, $orderBy: {name: 1}}): show me all records ordered by name ASC
+    => db.things.remove(): remove all data
+    => db.things.remove({name: 'rock'}): remove just the object with name 'rock'
+    => db.things.update({name: 'paper'}, {$set: {name: 'Paper'}}):
+        * finds object with name 'paper'
+        * $set is a command that we are going to set properties on the object
+        * then we tell what to set on the object
+    => db.things.update({name: 'paper'}, {$set: {name: 'Paper', message: 'hello'}}):
+        * i can update the name property & add an addtional property called 'message' on the fly
+- collections hold arbitrary JSON objects
+- mongoDB is popular because we can dump any JSON literals into it
+
+
+5. Mongoose
+- this is how you connect to mongoDB from a web app
+- it's a library to connect to a mongoDB (there are other libs as well)
+- npm install mongoose --save: to install it
+- to start using it:
+    => var mongoose = require("mongoose");
+    => mongoose.connect("mongodb://localhost:27017/my_world");  <= connect to my database
+    => mongoose.connection.on("open", function() {...});        <= what to do on connection open
+    => mongoose.connection.on("error", function(error) {...});  <= what to do on connection error
+    => mongoose.disconnect();                                   <= close the db
+- while mongo doesn't have a schema/form, we can enforce this via mongoose:
+
+var thingSchema = mongoose.Schema({
+    name: String
+});
+
+- but so far this is just a js variable, to connect it to my collection I need to model:
+
+var Thing = mongoose.model("thing", thingSchema);
+
+- this knows that my collection is plural (ie called 'things' in mongo)
+- it's smart enough to even know person in plural is people
+    => has smart pluralization logic built in
+- mongoose is smart that you can either pass a CALLBACK or a PROMISE, it supports both:
+    => if you pass a callback, it will execute the callback
+    => if you call via a promise, it will return to you a promise
+- to save a new record:
+    => var newThing = new Thing({name: Math.random().toString()});
+    => newThing.save([optional callback to do right after the save]);
+    => OR via promises:  newThing.save().then(function(result) { ... });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
