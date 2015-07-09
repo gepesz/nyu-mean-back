@@ -78,9 +78,10 @@ fs.readFile("bar.txt", "utf-8", function(err, data) {
 - to run:
 	=> jasmine-node foo_spec.js <= run a single file
 	=> jasmine-node spec/       <= run a whole folder
-- to autorun:  jasmine-node spec/ --autotest --verbose --color --watch *.js
+- to autorun:  jasmine-node spec/ --autotest --verbose --color --captureExceptions --watch **/*.js
 	=> --autotest: means rerun the thing if the spec.js file changes
 	=> --watch:    means rerun the thing if the app files change
+    => --captureExceptions: means capture all issues/exceptions in callbacks
 
 
 6. Modules

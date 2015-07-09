@@ -1,0 +1,146 @@
+CLASS #7
+
+1. Intro
+- https://github.com/ericpkatz/CE-9053-Summer-6/blob/master/spec/thing_spec.js:
+    => this is how you chain promises together:
+        db.connect()
+            .then(function() {...})
+            .then(function(_rock) {...})
+            .then(function(_paper) {
+                ...
+                done();     // <== don't forget to call done()!
+            });
+    => when one promise is done, it returns you the saved object:
+        * this is why you wrap the promise return inside a function()
+- similar to beforeEach(), we have an afterEach():
+    => this is where you can disconnect from a db for example
+    => or do any kind of stuff you want to do after a describe() block has finished
+- the ideal thing is to remove then seed the database on beforeEach(), then to
+  disconnect from it on afterEach()
+- there are 3 mongoose methods to query a db (so far):
+    => Thing.find()
+    => Thing.findById(_rock.id)
+    => Thing.findOne({ name: 'Rock'})
+
+
+2. Creating a DB module
+- good idea to create a db module with connect() and disconnect() methods
+- examples:
+    => db.js
+    => https://github.com/ericpkatz/CE-9053-Summer-6/blob/master/app/config/db.js
+- once you have this, you can create models on top of it:
+    => one model per collection
+    => example: https://github.com/ericpkatz/CE-9053-Summer-6/blob/master/spec/thing_spec.js
+- you want to open the connection in the outermost describe()'s beforeEach()
+- you want to close the connection in the outermost describe()'s afterEach()
+- then, you want to use your mongoose models (eg: Thing) to remove/save/update/whatever in the other beforeEach()-s
+- to make a mongoose schema unique per record:
+    var thingSchema = mongoose.Schema({
+        name: { required: true, type: String, unique: true }
+    });
+- if the uniqueness if violated, we get a mongoose exception (failed promise), NOT a mongoDB error!
+- good idea to remove all in the beforeEach(), not the afterEach(), so I can look at the
+  database after all tests have run
+
+
+3. Express
+- you create a server.js in the root (not the app!) dir
+- here is where we write our express app logic:
+
+var express = require("express");
+var app = express();
+
+app.get("/", function(req, res) {
+    res.send("Hello world");    
+});
+
+app.listen(process.env.PORT);
+
+- an express server is middleware: it serves up responses
+- the express server uses the app code to serve up various content
+- but writing html into the server is cumbersome
+- and generating html in javascript is messy
+- this is where Jade comes in
+
+
+4. Jade
+- Jade is to HTML what CoffeScript is to Javascript
+- npm install jade --save
+- now i can set the view engine for my app:
+    => var app = express();
+       app.set("view engine", "jade");
+- good idea to create a 'views' folder, and put all your .jade files into them
+    => so you have for example: views/index.jade
+- like python, you specify nesting by identation
+- use brackets and a list of properties to specify attributes:
+    => eg: a(href="/", alt="my alt")
+- app.locals.pretty = true;  <== this makes jade render pretty html instead of a one liner
+- you can grab the bootstrap css files just by going to bootstrapcdn.com:
+    => link(href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css", rel="stylesheet")
+
+html
+    head
+        link(href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css", rel="stylesheet")
+        title My title goes here...
+    body
+        ul.nav.nav-tabs
+            li.active
+                a(href="/") Home
+            li
+                a(href="/things") Thing
+            li 
+                a(href="/people") People
+        h1 Welcome to My World!
+        .container                      <== creates a <div class="container">
+            .well People page
+            ul.list-group
+                each person in people   <== this is how you iterate thru a data collection in Jade!
+                    li.list-group-item
+                        = person.name
+
+
+- so now I can create different Jade views on my server.js:
+
+app.get("/", function(req, res) {
+    res.render("index");
+});
+
+app.get("/things", function(req, res) {
+    res.render("things");
+});
+
+app.get("/people", function(req, res) {
+    res.render("people");
+});
+
+
+5. Server
+- edit the 'scripts' section of package.json to execute whatever you want after you type npm:
+    "scripts": {
+        "start": "nodemon server",
+        "test": "jasmine-node spec/ --autotest --verbose --color --captureExceptions --watch **/*.js"
+    },
+- you usually want to put your server.js into npm start using nodemon:
+    => "start": "nodemon server"
+- it's good to open the connection to my database at the very beginning of server.js:
+
+var db = require("./app/db");
+db.connect()
+    .then(function() {
+       console.log("database is connected"); 
+    });
+
+- once I have the connection open, I can start serving up different content:
+
+app.get("/people", function(req, res) {
+    Person.find()
+        .then(function(people) {
+            res.render("people", {people: people}); <== I can send back any data to my rendering engine
+        });
+});
+
+- now, I can simply use 'people' on my Jade to access the data!
+    => each person in people
+        li
+            = person.name
+
