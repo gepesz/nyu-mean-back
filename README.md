@@ -1,6 +1,6 @@
 # NYU Backend Web Development
 
-These are the class notes of [Peter Szocs](http://peter.szocs.info/) from [NYU Backend Web Development](http://www.scps.nyu.edu/academics/departments/information-technology/academic-offerings/noncredit/certificate-in-web-development-full-stack.html#undefined).
+These are the class notes of [Peter Szocs](http://peter.szocs.info/) from [NYU Certificate in Web Development: MEAN Full Stack](http://www.scps.nyu.edu/academics/departments/information-technology/academic-offerings/noncredit/certificate-in-web-development-full-stack.html#undefined).
 
 ## Creator
 
