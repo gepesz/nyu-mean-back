@@ -1,0 +1,153 @@
+CLASS #9
+
+files: nyu-mean-back-class-9  (forked from: https://github.com/ericpkatz/ce-9053-summer-9)
+s
+1. How to delete
+- one idea is to handle a delete like this (working from the URL backwards):
+    app.post("/things/:id/delete", function(req, res){
+        Thing.remove({_id: req.params.id})
+        .then(function(){
+            res.redirect("/things"); 
+        });    
+    });
+- then on Jade I can just add a 2nd form for the delete action:
+    form.form(method="POST", action="/things/#{thing._id}/delete")
+        div
+            button.btn.btn-warning(type="submit")
+                | Delete
+
+
+2. Error handling
+- mongoose is pretty good in handling the good case (using either callbacks or promises)
+- but it's not very good in handling errors
+    => we have to use callbacks
+   thing.save(function(err, _thing) {
+        if ( !err ) {
+            res.redirect("/things");
+        } else {
+            res.render("thing_new", {
+                activePath: "/things",
+                title: "Insert a New Thing",
+                error: err
+            });
+        }
+   });
+
+- by default the mongoose update() doesn't run the validators:
+    => you can add runValidators:
+        Thing.update(
+            {_id: req.params.id},
+            {$set:{ name: req.body.name, active: req.body.active || false }},
+            { runValidators: true },
+    => or we could just find the object first, then run a save() on it:
+        Thing.findById(req.params.id)
+        .then(function(thing) {
+            thing.name = req.body.name;
+            thing.save(function(err) {      <== does like a upSave(), meaning update() OR save()
+                if (!err) {
+                    res.redirect("/things");
+                } else {
+                    res.render("thing", {
+                       activePath: "/things",
+                       thing: thing,
+                       title: "Thing " + thing.name,
+                       error: err
+                    });
+                }
+            });
+        });
+
+- on Jade, I just pick up the error property:
+    if error
+        .alert.alert-danger
+            =error
+
+
+3. Combining views
+- thing.jade & thing_new.jade look almost identical:
+    => we could combine them into one
+    => let's remove thing_new.jade, which is the simpler one
+- but thing.jade wants a 'thing' to be passed onto it:
+    => on render("things/new") I can just add an extra thing: new Thing()
+    => now Jade will render =thing.name as empty string
+- mongoose has a built-in 'isNew' property which I can use on Jade:
+    if !thing.isNew
+        form.form(method="POST", action="/things/#{thing._id}/delete")
+            div
+                button.btn.btn-warning(type="submit")
+                    | Delete
+
+
+4. Middleware
+- it would be nice to be able to say this something that's called many times:
+    app.post("/things/:id", findThingById, function(req, res) {
+              ^^^ request   ^^^ middleware  ^^^ response
+    => the middleware indeed does get called after the request has been made!
+    => the middleware MUST CALL next(); (or else we'll be hanging)
+    => so I can write my middleware function:
+        function findThingById(req, res, next) {
+            if (req.params.id) {
+                Thing.findById(req.params.id)
+                    .then(function(thing) {
+                        res.locals.thing = thing;
+                        next();
+                    });
+            }            
+        }
+    => and then on my callback function I can just access res.locals.thing:
+        app.get("/things/:id", findThingById, function(req, res){
+            res.render("thing", {
+               activePath: "/things",
+               thing: res.locals.thing,
+               title: "Thing " + res.locals.thing.name
+            });  
+        });
+- this middleware simplifies things a lot:
+    => I can remove a lot of the 'Thing.find()' from my server.js
+    => reuses the same piece a lot
+- I can add even more into my middleware that all urls share:
+    => app.use(): EVERY view gets this middleware
+    => app.get("/things/:id", MIDDLE_WARE, function(req, res) { ... }): ONLY THIS path gets MIDDLE_WARE
+- easy to spot middleware, as middleware has this shape:   function(req, res, next)
+- if I pass something to next(), mongoose assumes it's an error:
+    => if (err) next(err)
+- this is a better error handling mechanism with middleware & next(err)
+
+
+5. Flash
+- used for messaging
+- it's like a bucket for the user: once the message is accessed, it disappears
+- often this is what we want to do, just use a message once then discard it
+- also needs a cookie, which is in the cookieParser npm library
+    => this is where we say how long this flash message should live
+- you can see the cookie under Chrome Inspector => Resources tab => Cookies area
+- in total we need 3 things: express-flash, express-session, cookie-parser
+    => npm install --save express-flash express-session cookie-parser
+- to start using it:
+    app.use(cookieParser("my secret"));  <== cookieParser requires a secret key (probably gets encoded)
+    app.use(session({ cookie: { maxAge: 60000 }}));
+    app.use(flash);
+- now we can start using flash messages:
+    req.flash("info", "A thing with an id of " + _thing._id);
+- you can access flash messages on locals.messages no my Jade view:
+    if (messages.info)
+        .message.info
+            span =messages.info
+- this is the easiest way to pass info & error messages from middleware to the view
+
+
+6. Routing
+- right now server.js is just too big, time to break things up
+- common practice is to have a folder 'app/routers' to move stuff into
+- express gives me a way to route things
+- this is done via express.Router():
+    => var thingsRouter = express.Router();
+
+
+7. Tips
+- tip: static files should be served first, so put that app.use() first
+- use script() to add a JS to your Jade view:
+    => script(src="/vendor/bootstrap/dist/js/bootsrap.js")
+- use jsbin's add library to see what a JS library depends on:
+    => bootstrap will actually include:
+- use the 'Network' tab on Chrome Inspector to see what a form passes back

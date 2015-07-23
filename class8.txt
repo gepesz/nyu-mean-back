@@ -1,0 +1,134 @@
+CLASS #8
+
+1. Intro
+- topics:
+    => how to serve up static content (eg: images, local js files, etc)
+    => how to use the Jade templating engine to avoid code duplication
+    => work on the view piece
+- touch .bowerrc: configuration file for bower
+    => has to be fully JSON format, eg:
+        {
+            "directory": "/public/vendor"
+        }
+    => 
+
+
+2. Jade
+- nested elements in Jade always need to be new line and spaced in!!
+- in Jade if I just say .container (.css_classname really): Jade default renders a DIV for you
+- to avoid copying Jade files, use templating
+- tip: create views/layout.jade, this is your template
+- now on the individual .jade pages, you say:
+    => extends layout
+    => at this point things work but look the same
+- what needs to happen is that the templated pages need to send something to the layout
+    => this is done via express, by passing info to the specific jade page:
+        app.get("/people", function(req, res) {
+            res.render("people", {
+                title: "People"
+            });
+        });
+- on top of static class names, I can also give Jade a dynamic class attribute using JSON objects
+- this is because Jade understands Javascript:
+    => li(class={"active": activePath == tab.path})
+    => note that here I don't use =activePath, rather just the name of the variable activePath inside the {}
+- you can always debug Jade by looking at the rendered page (looking at the html)
+- block content:
+    => is a Jade specific thing
+    => this is where the child (user) of a layout can specify what to put into the 'block content' area of the layout template!
+    => you can have multiple blocks on the Jade page, each with a different name
+- a(href="/things/#{thing._id}"):
+    => you can do '#' followed by a {object.property} to have that string resolved at runtime
+    => but this is a dynamic URL address, how can we serve it up?
+    => we need to modify server.js:
+        app.get("/things/:id", function(req, res) {
+            Thing.findById(req.params.id)
+                .then(function(thing) {
+                    res.send(thing);
+                });
+        });
+- unless you specify form.form(method="POST"), Jade will just issue a GET request and reload the page
+    => so this must be added to every form
+
+
+3. Static content
+- __dirname = the name of the directory that the currently executed node script lives in
+- __filename = the name of the file currently executed by node
+- by default, express doesn't serve up static files
+- you have to add code to your express 'app' variable to make this work:
+    => app.use(express.static(__dirname + "/public"));
+- this is how you want to serve up html, js and other static content
+- tip: setup a directory (eg: "public"), and serve all static content from there!
+- these things can be accessed right from a URL
+- the downside of app.use() is that it will go down that path to see if your request matches somebody in there
+- so instead, we could create our own function for app.use():
+    app.use(function(req, res, next) {
+        console.log("hello");   <== gets printed on the nodemon server.js terminal, cuz we are on the server side!
+        next();                 <== must be called, otherwise we won't return anything
+    });
+- res has a 'locals' variable that I can attach values to:
+    => again, this is how I can attach some values that my rendering Jade can pick up
+    => for example:
+    app.use(function(req, res, next) {
+        // console.log("hello");
+        res.locals.tabs = [     <== this is how the middle layer attaches stuff to all responses
+            {
+                title: "Home",
+                path: "/"
+            },
+            {
+                title: "People",
+                path: "/people"
+            },
+            {
+                title: "Things",
+                path: "/things"
+            }
+        ];
+        next();
+    });
+    => then on Jade I can do:
+        each tab in tabs
+            li  
+                a(href=tab.path)
+                    =tab.title
+- you can also add functions and make it a Tab object:
+    function Tab(title, path) {
+        this.title = title;
+        this.path = path;
+    }
+
+    Tab.prototype = {
+        isActive: function(activePath) {
+            return activePath == this.path;
+        }
+    };
+    => now on Jade I can do:
+        li(class={"active": tab.isActive(activePath) })
+- for form submission, I have to serve up .post()-s in my express application:
+
+
+4. Body-parser
+- it's an npm library to parse out data from a response
+- we use it in form post (send) parsing
+- you just tell the app to use it:
+    => app.use(bodyParser.urlencoded({}));
+- now my post looks like this:
+    app.post("things/:id", function(req, res) {
+        Thing.update(
+            {_id: req.params.id},
+            {$set:{$name: req.body.name}}
+        ).then(function() {
+            res.redirect("/things");
+        });
+    });
+- it's very common to redirect back to where I came from after an update:
+    => you should ALWAYS redirect on a POST
+
+
+5. Tips
+- what really happens when you use the 'new' keyword:
+    1. the object gets created
+    2. the object prototypes get attached to the object
+    3. the 'this' keyword now points to the newly created object
+    4. after we are done with the object, 'this' points to what it was pointing to before
