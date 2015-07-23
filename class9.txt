@@ -141,10 +141,27 @@ s
 - common practice is to have a folder 'app/routers' to move stuff into
 - express gives me a way to route things
 - this is done via express.Router():
-    => var thingsRouter = express.Router();
+    => in app/routers/things.js:
+        * var thingsRouter = express.Router();
+        * replace all 'app' with thingsRouter:
+            app.get("/things", ...) ==> thingsRouter.get("/things", ...)
+        * or even better, just call thingsRouter the 'app' so we don't need to replace anything:
+            var app = express.Router();
+            app.get("/things", ...)
+    => in server.js:
+        * var thingsRouter = require("../app/routers/things");
+        * app.get("/things", thingsRouter);
 
 
-7. Tips
+7. Mongolab
+- let's you create Mongo dbs
+- gives you a connection string to your db
+- you need a username & password to get to your db
+- change db.js: replace your connection string with this new one
+- what that gives you is the ability to deploy your app to say Heroku
+
+
+8. Tips
 - tip: static files should be served first, so put that app.use() first
 - use script() to add a JS to your Jade view:
     => script(src="/vendor/bootstrap/dist/js/bootsrap.js")
