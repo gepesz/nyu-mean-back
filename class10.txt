@@ -1,0 +1,240 @@
+CLASS #10
+
+files: nyu-mean-back-class-10  (forked from: https://github.com/ericpkatz/ce-9053-week-10-summer)
+
+1. Topics: Angular
+    => nice framework for a SPA
+    => backbonejs is another framework for SPAs
+    => we are going to move from express into Angular
+
+
+2. Steps:
+- npm init
+- install express, jade, nodemon: npm install --save express jade nodemon
+- setup express application:
+    var express = require("express");
+
+    var app = express();
+    app.set("view engine", "jade");
+
+    app.get("/", function(req, res) {
+        res.render("index"); 
+    });
+
+    app.listen(process.env.PORT);
+
+- create views folder & index view:
+    mkdir views
+    touch views/index.jade:
+    html
+    head
+    body
+        ul
+            li
+                a(href="/") Home
+            li
+                a(href="/things") Things
+        .container
+            .well Welcome
+
+- create .bowerrc (for controlling directory of vendor files):
+    mkdir public
+    mkdir public/vendor
+    touch .bowerrc  <== again, this has to be in STRICT JSON format "key": "string":
+    {
+        "directory": "public/vendor"
+    }
+
+- install bootstrap
+    bower install bootstrap
+    now I can include this on my index.jade:
+        link(rel="stylesheet" href="/vendor/bootstrap/dist/css/bootstrap.css")
+
+- install angular
+    now I can include angular on my index.jade:
+        script(src="/vendor/angular/angular.js")
+    => we can test whether this installed well:
+        * Chrome Inspector, Console tab: angular (should return a huge object)
+
+- create app.js to create angular application
+    mkdir app
+    touch app/app.js:
+    var app = angular.module("myWorld", []);    <== the brackets are the additional modules to use
+    
+    => now I can include this on index.jade as well:
+        script(src="/app/app.js")
+    => right now a simple angular expression on index.jade such as {{ 5*5 }} doesn't work:
+        * simply renders {{ 5*5 }} on html
+        * I have to inject my angular module into the page via ng-app on the body:
+            body(ng-app="myWorld")
+        * now, {{ 5*5 }} evaluates to 25
+    => angular manipulates the DOM
+
+- install angular route
+    bower install angular-route
+
+- create a static route to serve vendor files
+    app.use(express.static(__dirname + "/public"));
+
+- create first angular controller
+    app.controller("MyCtrl", function($scope) {
+       $scope.name = "Peter";
+    });
+    => now on Jade I can do: div(ng-controller="MyCtrl") {{ name }}
+
+- create angular route, in app.js:
+    => MUST ADD 'ngRoute' to angular.module:
+        var app = angular.module("MyWorld", ["ngRoute"]);
+    => now I need to configure it:
+        app.config(function($routeProvider, $locationProvider)) {
+            $routeProvider
+                .when("/", {
+                    template: "Home Page"
+                })
+                .when("/things" {
+                    template: "Things Page"
+                })
+        });
+    => instead of 'template', use 'templateUrl' to tell Angular to make an AJAX request and bring in that file:
+        * you usually put this into the 'templates' folder: templates/index.html, templates/things.html, etc
+        * but these html pages don't exist yet... we need to create them:
+            mkdir public/templates
+            touch public/templates/index.html   <== I can now put pure html here that will be rendered into ng-view!!!
+    => you don't call this function, rather Angular will call you
+    => this routing is in the client side... so this this client side routing!
+
+
+3. Angular
+- if you have a controller on a .jade or .html file that's not defined:
+    => Angular throws an exception
+- when I add a controller to app.js, it gets called:
+    app.controller("MyCtrl", function() {
+        console.log("I am a controller");   <== gets called for each controller that I create on my view!!!
+    })
+    => if I copy/paste on my view div(ng-controller="MyCtrl") {{ name }}, each div will have its own scope
+    => so if I change name in one of the Controllers, the other is still the same
+- so basically for each controller, the associated function gets called
+- the way data gets passed between the view and the controller is the $scope variable (object)
+- a controller is really just a callback function that gets called from the view, and it has a $scope variable attached
+- anything I attach to $scope, I can just access from Jade:
+    $scope.name = "Peter";                  <== in app.js
+    div(ng-controller="MyCtrl") {{ name }}  <== on index.jade
+- ng-model:
+    => this is the Angular directive that binds a property on $scope to an input field:
+        label Name
+        input.form-control(ng-model="name")
+    => this is two-way model binding: if I change the input box, the $scope.name changes
+    => and vice versa
+- ng-repeat:
+    => <li class="list-group-item" ng-repeat="thing in things" ng-click="remove(thing)">
+            {{ thing.name }}
+       </li>
+    => this is how you repeat rendering the same thing on the .html
+- ng-click:
+    => this is how I can create/assign events
+    => need to implement the function inside the Angular Controller:
+        ng-click="remove(thing)"
+        $scope.remove = function(thing) { ... }
+    => ng-click is how you send data back from the view into the Controller
+- ng-class:
+    => add additional CSS class to an element based on some criteria
+    => <p class="label" ng-class="{'label-success': person.active, 'label-warning': !person.active">{{ person.active }}</p>
+
+
+4. Angular route
+- ng-view:
+    => div(ng-view)  <== on my Jade body
+    => another directive
+    => used with routing
+    => renders a different view based on the routes (eg: "/things", "/things/:id", "/things/new", etc)
+    => the view that gets rendered is the one defined on $routeProvider.when("path", { template: THIS_THING! })
+- Angular has a template cache:
+    => the first time it goes out and pulls in that templateUrl (you can see that on Inspector => Network tab)
+    => but the second time I click on it, no Network traffic is done
+- in addition to a templateUrl, I can add a different controller for each route:
+   $routeProvider
+        .when("/", {
+           templateUrl: "/templates/home.html",
+           controller: "HomeCtrl"
+        })
+        .when("/things", {
+            templateUrl: "/templates/things.html",
+            controller: "ThingsCtrl"
+        })
+        .when("/people", {
+            templateUrl: "/templates/people.html",
+            controller: "PeopleCtrl"
+        });
+- of course, now I need to create these additional controllers right below in app.js
+- use the $scope to pass something to the template
+
+
+5. Mongoose
+- npm install --save mongoose
+- in server.js:
+    var mongoose = require("mongoose");
+    mongoose.connect("mongodb:/localhost:27017/my_world");
+    mongoose.connection.on("open", function() {
+        console.log("connected");    <== again, this prints on nodemon (server side), NOT in Chrome!
+    });
+    mongoose.connection.on("error", function(err) {
+        console.log(err);
+    });
+- in server.js, now I can add my /api endpoint:
+    app.get("/api/things", function(req, res) {
+        Thing.find({})
+            .then(function(things) {
+                res.send(things);
+            });
+    });
+
+
+6. Tips
+- in real life, you don't do the steps every time..  you use an express application creator framework
+    => but that just really executes the 'Steps' above
+- how to get rid off the annoying '#':
+    => add: base("/") into index.jade's 'head' section
+    => add: $locationProvider.html5Mode(true); into app.js, app.config() area
+    => but now if I reload on "/things", I'll get a 404 error from express: there was no routing setup for it
+    => the quick fix is to add the express routing (server-side routing) to each "/things", "/people", etc
+    => again, this is only an issue on reload, as reload goes back to the server
+- app.js is a plain old .js file with closure, so I can maintain state in it:
+    var counter = 0;                    <== outside the controller
+    $scope.controller = ++controller;   <== eg: how many times you've been on this page
+- remember that the controller gets called every time it goes into the view!
+- common practice is to have an /api endpoint:
+    => this indicates you are getting some data
+    => /api/things: to get things:
+        app.get("/api/things", function(req, res) {
+            Thing.find({})
+                .then(function(things) {
+                    res.send(things);   <== express figures out that you just want to send data along!
+                });
+        });
+    => this is how you serve up data from the server
+- then what you can do on the client (app.js) is to use the $http object from node to make an AJAX request for it:
+    => $http.get("/api/things")
+    => this returns a promise (Angular relies heavily on promises)
+    => a promise is always asynch (because an AJAX call is always asynch as well)
+    => so app.js becomes:
+        app.controller("ThingsCtrl", function($scope, $http) {
+            $http.get("/api/things")
+                .then(function(results) {
+                    console.log(results);   <== results.data is where the 'things' really reside
+                    $scope.things = results.data;
+                });
+        });
+    => remember to add $http to the controller's callback function:
+        * app.controller("ThingsCtrl", function($scope, $http) { ... } );
+        * the order does NOT matter, injection happens by name
+        * so you can do function($http, $scope) just as well
+- it's better to group the /api endpoints together and put them into their own router
+- next class: Angular services
+    => the controllers shouldn't be responsible for making the $http.get() requests
+    => the controllers should simply put things into $scope
+    => the services are the ones that should do the data lookup
+- in a nutshell, Angular is:
+    => directives
+    => services
+    => authentication
+    => when to use what is the key

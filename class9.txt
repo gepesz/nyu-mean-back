@@ -1,7 +1,7 @@
 CLASS #9
 
 files: nyu-mean-back-class-9  (forked from: https://github.com/ericpkatz/ce-9053-summer-9)
-s
+
 1. How to delete
 - one idea is to handle a delete like this (working from the URL backwards):
     app.post("/things/:id/delete", function(req, res){
@@ -129,7 +129,7 @@ s
     app.use(flash);
 - now we can start using flash messages:
     req.flash("info", "A thing with an id of " + _thing._id);
-- you can access flash messages on locals.messages no my Jade view:
+- you can access flash messages via 'messages' no my Jade view:
     if (messages.info)
         .message.info
             span =messages.info
@@ -147,10 +147,20 @@ s
             app.get("/things", ...) ==> thingsRouter.get("/things", ...)
         * or even better, just call thingsRouter the 'app' so we don't need to replace anything:
             var app = express.Router();
-            app.get("/things", ...)
+        * but now I have to remove the "/things" from the beginning of the routes so I just have:
+            app.get("/", ...)   <== was app.get("/things", ...) before!!
+        * and most importantly, I have to module.exports() at the end:
+            module.exports = app;
     => in server.js:
         * var thingsRouter = require("../app/routers/things");
-        * app.get("/things", thingsRouter);
+        * app.use("/things", thingsRouter);
+- app.use() is middleware:
+    => this is what gets executed first
+    => MUST BE IN ORDER
+    => if any of the app.use() finds the path, it returns that, and we are done
+    => if not, then it calls next() ==> goes to the next app.use() (middleware)
+    => this is why you start with the app.use() first
+    => and then on the bottom you say your app.get()
 
 
 7. Mongolab
@@ -166,5 +176,6 @@ s
 - use script() to add a JS to your Jade view:
     => script(src="/vendor/bootstrap/dist/js/bootsrap.js")
 - use jsbin's add library to see what a JS library depends on:
-    => bootstrap will actually include:
+    => bootstrap will actually include first:
+    <script src="https://code.jquery.com/jquery.min.js"></script>
 - use the 'Network' tab on Chrome Inspector to see what a form passes back
