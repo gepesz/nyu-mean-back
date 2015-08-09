@@ -1,0 +1,237 @@
+CLASS #11
+
+files: nyu-mean-back-class-11  (forked from: https://github.com/ericpkatz/week-11-summer-9053)
+
+1. Topics:
+    => express app generator: express-generator
+    => Angular
+    => Angular services
+
+
+2. Express generator (ie: setup server side)
+- npm install express-generator -g
+    => installs 'express' command
+- express myApp (express <name_of_the_app>)
+    => creates a directory structure under 'myApp' folder
+    => usually you move stuff out & delete 'myApp'
+- npm install:
+    {
+      "name": "myapp",
+      "version": "0.0.0",
+      "private": true,
+      "scripts": {
+        "start": "node ./bin/www"
+      },
+      "dependencies": {
+        "body-parser": "~1.13.2",
+        "cookie-parser": "~1.3.5",
+        "debug": "~2.2.0",
+        "express": "~4.13.1",
+        "jade": "~1.11.0",
+        "morgan": "~1.6.1",
+        "serve-favicon": "~2.3.0"
+      }
+    }
+- ./bin/www:
+    => this is what npm start will run
+    => this is the top level skeleton of the app
+    => already includes 'app.js'
+- npm install nodemon -g
+    => then you can change npm start to use 'nodemon ./bin/www'
+- npm start:
+    => start the app up
+- you can put Node environment variables by using NODE_VARNAME=var_value:
+    => NODE_ENV=prod nodemon ./bin/www
+    => now 'env' is set to 'prod'
+    => this is how the express-generator distinguishes between dev & prod environments
+- express-generator really just uses everything we did so far:
+    => serving static content (via static routes)
+    => express routes
+    => using jade views
+    => using jade layouts
+    => also adds 404 & 500 pages
+- http://expressjs.com/starter/generator.html
+
+
+3. Bower (ie: setup client side)
+- touch .bowerrc:
+    {
+        "directory": "public/vendor"
+    }
+- bower install bootstrap angular angular-route
+- change layout.jade:
+    link(rel='stylesheet', href='/vendor/bootstrap/dist/css/bootstrap.css')
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    script(src='/vendor/angular/angular.js')
+    script(src='/vendor/angular-route/angular-route.js')
+    script(src='/javascripts/app.js')    <==  this is where my client side Angular code will go into!
+  body(ng-app="my_world")
+        block content
+- change index.jade, add this:
+    div(ng-view)
+- public/javascripts is where all Angular files live!
+- change javascripts/app.js:
+    var app = angular.module('my_world', ['ngRoute']);
+
+    app.config(function($routeProvider, $locationProvider) {
+        $routeProvider
+            .when("/", {
+                controller: "HomeCtrl",
+                templateUrl: "/templates/home.html"
+            });
+    });
+- put your controllers into separate controller files:
+    => to avoid having multiple 'app' variables lying around in the global namespace, it's better to:
+        angular.module("my_world")
+            .controller('HomeCtrl', function($scope) {
+                $scope.message = "Welcome to My World. " + new Date();
+            });
+    => meaning we don't create another 'app' variable, rather just say .controller() on the named module
+- of course, be sure to include this controller in layout.jade:
+    script(src='/javascripts/home/home_ctrl.js')
+- $location:
+    => change the URL, but don't actually reload the whole page
+    => this is how we jump between controllers & views on the SPA without full reload
+
+
+4. Mongo (ie: setup data & model side)
+- npm install mongoose --save
+- mkdir config/db.js:
+    => this is where you should connect to your MongoDB
+    var mongoose = require("mongoose");
+    module.exports = {
+        connect: connect
+    };
+    function connect(cb) {
+        mongoose.connect("mongodb://localhost:27017/my_world");
+        mongoose.connection.on("open", function(){
+            cb(null, "done");
+        });
+        mongoose.connection.on("error", function(err){
+            cb(err, null);
+        });
+        
+    }
+- then I require this in my express app:
+    require("./config/db").connect(function(err, conn){
+      if(err)
+        console.log(err);
+      else
+        console.log("connected");
+    });
+
+- once the mongod is running & I have a mongoose connection, I want to setup the 'api' URL:
+    => example: mysite/api/things
+    => this URL won't be exposed, but all routes that serve JSON data will go thru mysite/api/what_i_serve
+- first create the Thing schema inside /models/things.js:
+    var mongoose = require('mongoose');
+    var ThingSchema = mongoose.Schema({
+        name: { type: String, required: true, unique: true },
+        price: { type: Number, required: true, default: 0 }
+    });
+
+    var Thing = mongoose.model("thing", ThingSchema);
+
+    module.exports = Thing;
+- second create a new express router for "/api/things":
+    => var Thing = require("../models/things.js");  <== this is where I use my thing schema
+    => router.get("/", function(req, res) {
+        Thing.find({}).then(function(things) {
+            res.send(things);
+        });
+    });
+    => router.post("/", function(req, res) {  <== also set it up for posts (ie: inserting data)
+        var thing = new Thing(req.body);
+        thing.save().then(function() {      <== but remember this doesn't handle the error case!
+            res.send(thing);
+        });
+    });
+    => router.post("/", function(req, res) {  <== now we handle errors & status & error messages on insert
+        var thing = new Thing(req.body);
+        thing.save(function(err, _thing) {
+            if (err) {
+                res.status(422);
+                res.send(err);
+            } else {
+                // by default res.status is 200 - no need to set it explicitly again
+                res.send(thing);
+            }
+        });
+    });
+- third, remember to wire this up in the main express app
+- fourth, wire up the Angular ThingsCtrl to actually use the 'api' endpoint:
+    => get the data, then put it into $scope:
+        angular.module("my_world")
+            .controller("ThingsCtrl", function($scope, ThingsSvc){
+                console.log("ThingsCtrl");
+                ThingsSvc.getThings()
+                    .then( function(things){
+                        $scope.things = things;
+                    })
+            });
+
+
+5. Angular services
+- the controllers should just shovel data into $scope, not make $http gets
+- better to create a service to get the data, then let the controller use that service
+- you can just inject the ThingsSvc into the controller params, just like $scope, $http, etc:
+    =>  angular.module("my_world")
+            .controller('ThingsCtrl', function($scope, ThingsSvc) {
+                ThingsSvc.getThings()
+                    .then(function(things) {
+                        $scope.things = things;
+                    });
+            });
+- in Angular, you create a service via the 'factory' keyword:
+    angular.module("my_world")
+        .factory("ThingsSvc", function($q) {
+            function getThings() {
+                var dfd = $q.defer();
+                $http.get("/api/things")
+                    .then(function(response) {
+                        dfd.resolve(response.data);
+                    });
+                return dfd.promise;
+            }
+            return {
+                getThings: getThings
+            };
+        });
+- again, remember to include the newly created service in layout.jade
+- Angular comes with the Q libary built into it
+    => we can use that to make our factory functions return promises
+- we can also make inserts into our database (via the service) by using $http.post():
+    function save(thing) {
+        var dfd = $q.defer();
+        $http.post("/api/things", thing)
+            .then(function(_thing) {
+                dfd.resolve(thing);
+            })
+            .catch(function(err) {
+                dfd.reject(err.data);
+            });
+        return dfd.promise;
+    }
+- remember: controllers get called EVERY TIME, whereas the factory only gets called once!
+    => it's a singleton: you can use it for example to store tab states as well
+
+
+6. Tips
+- it's good to start with the desired URL and work backwards:
+    => then I add it to my express app:
+        * app.get("/newUrl", function(req, res, next) { 
+            res.render('index', { title: 'title' });
+            next();
+        });
+    => then I add it to Angular routes:
+        * create the new controller
+        * create the new template .html
+        * include the new controller on layout.jade
+- Angular has a lot of formatters built in, for example:
+    => {{ things.price | currency }}
+- app.use(bodyParser.json()):
+    => important middleware that ensures the data sent will be in JSON format!
+- testing really comes down to 3 layers:
+    => browsers tests: karma (Angular/client testing)
+    => node tests: the api endpoints (model testing)
+    => protractor: e-2-e testing
