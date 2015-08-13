@@ -1,0 +1,149 @@
+CLASS #12
+
+files: nyu-mean-back-class-12  (forked from: https://github.com/ericpkatz/week-12-9053-summer.git)
+
+1. Topics:
+    => Angular directives
+    => Angular directives & services
+    => $watch
+- typical Angular learning curve:
+    => controllers (each one is different: has it's own scope)
+    => services    (singular)
+    => directives  (connection to services)
+    => authentication
+
+
+2. Angular directives
+- you create directives when you want reusability on the view
+- by default, directives are attributes
+- but I can make them elements by adding restrict: "E" to it
+- you can create new elements, new attributes, or new classes (never really used)
+    => restrict: "E": element
+    => restrict: "A": attribute
+    => restrict: "EA": can be both
+- naming convention: camelCase
+    app.directive("myFooDirective", function() {  <== this function gets called every time I use my directive
+      return {
+        template: 'xyz'     <== literally gets pasted into the html
+      };    
+    });
+- but on HTML, by convention, all elements & attributes are all lower case with dashes: my-foo-directive
+- directives by default take the scope of their parents (ie: parent controller!)
+- but I can override this by adding a controller to the directive itself:
+    app.directive("myFooDirective", function() {
+      return {
+        restrict: "E",
+        template: "<div class='well'>{{myFoo}}</div>",
+        controller: function($scope) {
+            var tabs = [
+                {
+                    title: "Home",
+                    path: "/"
+                },
+                {
+                    title: "Things",
+                    path: "/things"
+                }
+            ];
+            $scope.tabs = tabs;
+        }
+      };
+    });
+
+- alternatively I can add scope onto the directive itself:
+    app.directive("myFooDirective", function() {
+      return {
+        restrict: "E",
+        scope: {
+          myFoo: '=',  <== means evaluate this thing as a number
+          title: '@'   <== means grab the value and bring it in as a string (evaluated as a string)
+        },
+        template: "<div class='well'>{{myFoo}}</div>"
+      };
+    });
+    
+    <div ng-controller="FooCtrl">
+      <my-foo-directive my-foo="{{6*6}}" title="my special title">  <== this is how I can pass data into the directive!
+      </my-foo-directive>
+    </div>
+- so scope is really used to pass things from the view into the directive
+    => to alter behavior slightly between reuses
+- after creating a new directive (eg: mainNav), I can add to index.jade:
+    => main-nav    <== will just render the template
+
+
+3. Services
+- usually you want to connect directives to services:
+    .directive("mainNav", function(){
+        return {
+            restrict: 'E',
+            templateUrl: '/templates/main_nav.html',
+            controller: function($scope, NavSvc) {
+                $scope.tabs = NavSvc.getTabs();
+            }
+        };
+- since services are singleton, it's a great place to keep state for directives
+    => for example: which tab is currently selected
+    => you can use the nav services state in the directive or the template to do something differently
+- typically you also write an authentication service: AuthSvc
+    angular.module("my_world").factory("AuthSvc", function() {
+        var _user = {};
+
+        return {
+            user: _user
+        };
+    });
+- note that a service can use another service:
+    angular.module("my_world").factory("AuthSvc", function(NavSvc) {
+        var tab = NavSvc.getSelectedPath();
+        ...
+    });
+
+
+4. $watch
+- this is how you watch for changes to a variable in the $scope:
+    $scope.$watch("user", function(curr, prev) {
+        console.log(curr);  <== new value
+        console.log(prev);  <== old value
+        if ( curr.id != -1 ) {
+            console.log("logged in " + curr.username);
+        }
+    });
+
+
+6. Tips
+- ng-options:
+    => use this to bind a select combobox to an array of things on the scope
+    => you still have to give an ng-model to the select, otherwise won't work
+- if you put ng-model="xyz" and "xyz" is not yet on the scope ==> Angular will put it on the scope
+- it's good practice to add a "please choose a user" as a first option in a dropdown:
+    var users = [ ... ];
+    users.unshift({ id: -1, username: "-- choose a user --"});
+    $scope.user = users[0];
+    $scope.users = users;
+- recursive-readdir:
+    => npm module to dir directory recursively
+    => can be used to bring in all .js files (in different dirs)
+    => put this in app.js on the server side:
+
+    => then I can access it on my Jade view page:
+        for script in scripts
+            script(src="#{script}")
+- use $location.path = "/whatever" to go to that controller & view w/o full reload from server
+- inside a Controller, if you want to refresh scope values, it's good practice to wrap the svc calls in wrappers:
+    function activate() {       <==  this is where I wrap my db call & refresh scope
+        ThingSvc.getThings()
+            .then(function(things) {
+                $scope.things = things;
+            });
+    }
+    $scope.deleteThing = function(id) {
+        ThingSvc.deleteThing(id)
+            .then(function() {
+                activate();     <==  this is where I REUSE the refresh mechanism on thing delete
+            });
+    }
+    activate();     <==  this is where I populate my $scope on the very first load
+- !! operator:
+    => turn a falsy (undefined/null) into a boolean value
+    => best way to turn falsy/truey statements into boolean value
