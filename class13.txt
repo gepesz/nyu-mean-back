@@ -1,0 +1,200 @@
+CLASS #13
+
+files: nyu-mean-back-class-13  (forked from: https://github.com/ericpkatz/week-12-9053-summer.git)
+
+1. Topics:
+    => authentication
+    => jwt tokens
+    => chaining promises
+    => page reload, keep user logged in
+
+
+2. Login
+- traditionally, after login you have a Session object created
+    => each user has their own session
+    => this is how you keep track of who's still logged in
+    => in reality there is a cookie that's being sent back that identifies the session
+- lately there is a new trend:
+    => instead of session data, you get a 'bearer' token
+    => avoids creating many sessions as you have more users
+    => also as things scale up and you have many servers, it avoids having to copy the session
+- bearer tokens:
+    => consists of 2 parts: regular object & hash of the object
+    => first part is called token, second part is called signature
+    => each request sends the same token to the server
+    => the client can change the data, but it's checked against the hashed value on the server side
+- essentially you get back a token:
+    => don't put passwords into it
+    => user ids are fine to put into
+
+
+3. Authentication
+- the way promises works is that you can have 2 functions in a .then():
+    => first one gets called on success
+    => second one gets called on error
+    => AuthSvc.authenticate($scope.user)
+            .then(
+                function(result) {
+                    // success
+                },
+                function(error) {
+                    // error
+                    console.log(error);
+                    $scope.error = error;
+                }
+            );
+    => this is the same thing as having a .then() and a .catch() one after the other
+    => simply stylistically different
+
+- on AuthSvc:
+    function authenticate(user) {
+        var dfd = $q.defer();
+        $http.post("/api/session", user)
+            .then(
+                function(response) {
+                    // success
+                    dfd.resolve(response.data);
+                },
+                function(response) {
+                    // error
+                    dfd.reject(response.data);
+                }
+            );
+        return dfd.promise;
+    }
+
+- on session.js:
+    router.get('/', function(req, res){
+        var token = jwt.decode(req.query.token, process.env.SECRET || 'foo');
+        var _id = token.id;
+        User.findById(_id)
+            .then(function(user){
+                user.password = null;
+                res.send(user);
+            });
+    });
+    router.post('/', function(req,res){
+        var user = req.body;
+        User.findOne({ username: user.username, password: user.password})
+            .then( function(_user){
+                if(!_user)
+                    return res.status(401).send("Bad user name and password");
+                res.send(jwt.encode({id: _user._id}, process.env.SECRET || 'foo'));
+            });
+    });
+    => decode the token first, then use the userId to find it in the database
+
+
+4. jwt-simple
+- npm install jwt-simple --save
+- jwt = JSON Web Token
+- simple npm module for tokens
+- allows us to encode request bodies:
+    => res.send(jwt-encode(req.body, process.env.SECRET || 'foo'));
+    => the secret key here is either the 'SECRET' env var or 'foo'
+    => jwt-encode() is a one way function that takes in a data piece & a key piece and encodes it
+- jwt.io:
+    => copy/paste your token here, it will decode it
+    => again, token is the first part of the bearer key: this is open and can be decided
+    => but the second part, the signature: i can only decode this if i know the 'secret' key to it
+- so the key here is to keep the 'secret' key a secret on the server side
+- i can easily decode it:
+    router.get('/', function(req, res) {
+        var token = jwt.decode(req.query.token, process.env.SECRET || 'foo');
+        res.send(token);
+    });
+    => simply put this into the url: http://MY_APP/api/session?token=ei87HEGAGwadaaa
+    => will echo back my payload: { 'username': 'prof', 'password': 'eee' }
+
+
+5. Page reload
+- how to keep the user logged in in case of a page reload?
+- we need to keep the token around somewhere
+- you can store it in $window.sessionStorage():
+    => $window.sessionStorage().setItem("token", value);
+    => $window.sessionStorage().getItem("token");
+    => lasts as long as you don't close the browser
+    => there are ways to persist it even longer (which is usually done via cookies)
+- this will be kept around, but now i need to add my token on app startup:
+    => Angular provides app.run() for this:
+        app.run(function() {  <== gets called only once on the very first page load
+
+        });
+    => of course I can use my services as usual
+        app.run(function(AuthSvc) {
+            AuthSvc.tryLogin()
+                .then();
+        });
+- but now do make sure that if the user clicks on Logout, it really logs out
+    => $window.sessionStorage.removeItem("token");
+    => destroys the sessionStorage item
+
+
+6. Deletes & tokens
+- you want to make deletes double check the token on server side app.js
+- this is how you do it:
+    router.post(":id/delete/:token?", function(req, res) {
+        var token = jwt.decode(req.params.token, process.env.SECRET || 'foo');
+        ...
+    });
+    => the '?' makes that part optional
+- this is how you can avoid somebody just typing in the URL and start deleting things
+- but you usually don't want to handle tokens on the server side:
+    => change the service to make "/api/delete/" + id + "?token=" + getToken()
+    => then i can remove the :token? part from my router.post()
+    => and instead replace it with this:
+        function checkAuthentication(req, res, next) {
+            try {
+                jwt.decode(req.params.token, process.env.SECRET || 'foo');
+                next();
+            } catch (ex) {
+                res.status(401).send("not authorized");
+            }
+        }
+        router.post(":id/delete", checkAuthentication, function(req, res) {
+            Thing.remove(...);
+        });
+
+
+7. Tips
+- OAuth 2 is related to bearer tokens but it's about third party tokens
+- a promise can respond to .then() and .catch() AND 2 function()-s
+- unless a response status is 200 (success) ==> we'll go into the second function
+- if i don't resolve() and don't reject() the dfd ==> we don't even enter .then() or the .catch()!
+    => returning a promise means i'm returning data
+- if i go somewhere else via $location, no need to resolve the promise:
+    => $location.path("/");
+- passport:
+    => npm module for these kind of tokens
+    => less hassle, more built out functionality
+    => http://passportjs.org/
+- to avoid the code going nested & nested:
+    => when you are inside a .then(), and making another asynch call, just return that
+       promise and handle it in the next .then()
+    => .then(function(response) {
+            return $http.get(...);
+       })
+       .then(function(response) {
+
+       })
+    => this is called promise chaining (on the same level)
+    => but now you go into the 2nd .then() on error as well
+    => add a .catch() at the end to catch all  <==  this is when a .catch() makes a difference
+    => so basically don't handle errors in the middle of a promise chain, only at the end
+- you can also add .then() without returning anything:
+    .then(function(response){
+        _user.username = response.data.username;
+        _user.luckyNumber = response.data.luckyNumber;
+    })
+    .then(function(){
+        $location.path("/");
+    })
+    => this reads nicely and is very powerful
+    => you can separate things out logically
+- you can also simply pass a function to a .then():
+    function setUser(response) {
+        ...
+    }
+
+    .then(setUser)
+    .then(function() {...})

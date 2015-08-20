@@ -122,9 +122,19 @@ files: nyu-mean-back-class-12  (forked from: https://github.com/ericpkatz/week-1
     $scope.user = users[0];
     $scope.users = users;
 - recursive-readdir:
-    => npm module to dir directory recursively
+    => npm module to add directories recursively
     => can be used to bring in all .js files (in different dirs)
     => put this in app.js on the server side:
+        app.use(function(req, res, next){
+          recursive('public/javascripts', ['app.js'], function (err, files) {
+            var scripts = files.map(function(file){
+              return file.replace("public", '');
+            })
+            res.locals.scripts = scripts;
+            next();
+          // Files is an array of filename 
+          });
+        });
 
     => then I can access it on my Jade view page:
         for script in scripts
@@ -147,3 +157,6 @@ files: nyu-mean-back-class-12  (forked from: https://github.com/ericpkatz/week-1
 - !! operator:
     => turn a falsy (undefined/null) into a boolean value
     => best way to turn falsy/truey statements into boolean value
+- ./bin/www is executable:
+    => #!/usr/bin/env node  <== this is how it starts
+    => and it's permission is set to executable

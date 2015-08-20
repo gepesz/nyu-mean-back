@@ -212,6 +212,8 @@ files: nyu-mean-back-class-11  (forked from: https://github.com/ericpkatz/week-1
             });
         return dfd.promise;
     }
+- not every function you put into a factory you need to expose
+    => it's good practice to have often used code put inside a non-exposed 'private' function
 - remember: controllers get called EVERY TIME, whereas the factory only gets called once!
     => it's a singleton: you can use it for example to store tab states as well
 
