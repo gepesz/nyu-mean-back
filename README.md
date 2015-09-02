@@ -8,8 +8,5 @@ These are the class notes of [Peter Szocs](http://peter.szocs.info/) from [NYU C
 
 * https://twitter.com/szocspeter
 * https://www.facebook.com/szocs.peter
+* https://www.linkedin.com/in/szocspeter
 * https://github.com/gepesz
-
-## Copyright and License
-
-Copyright &copy; 2015 Peter Szocs. Released under the [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
