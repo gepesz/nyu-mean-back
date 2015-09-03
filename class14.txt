@@ -1,0 +1,246 @@
+CLASS #14
+
+files: nyu-mean-back-class-14  (forked from: https://github.com/ericpkatz/rock_paper_scissors)
+
+1. Topics:
+    => seeding our db on app startup
+    => bluebird promises
+    => going to production environment
+    => gulp
+    => gulp modules
+    => testing with mocha
+
+
+2. Seed
+- good idea to seed the database on app wakeup
+    => ex: add users to login with
+    => do this via require("../config/db").seed().then(...)
+- see /config/db.js
+
+
+3. Bluebird
+- library for promises
+- better implementation / better known than the $q library
+- faster as well
+- Angular comes with $q, not with bluebird: npm install --save angular-bluebird to use it
+- Promise() object:
+    => instead of doing a resolve / reject, you return the entire promise upfront
+    => you pass a callback to the Promise(): this will be called when ppl call .then() or .catch()
+    => Promise(function(resolve, reject)): the resolve / reject is where I put what I want into each
+    => you can name resolve & reject whatever you want to
+    => the first one will be called on success, the second on error
+- sometimes you don't care of the order in which the asynch calls get executed
+    => eg: when you are cleaning out an entire db
+    => return Promise.all([ array of promises ]):
+        * means the resolve all promises in whatever order they will come in
+        * once all promises have resolved, then return
+- Promise.all() is really just how you execute multiple asynch calls in whatever order
+    => it's a great way to do things parallel instead of having to do them one after another serially
+    => you get things back in the same order as you define them in the array
+    => but this is not because the first thing executed first, it's because the Promise.all() keeps
+       keeps track of all promises and returns things in the same order
+
+
+4. Going to production
+- app.get('env') = 'development' by default
+    => NODE_ENV=production nodemon ./bin/www  is how I change it
+- build assets:
+    => concat all .js files into one
+    => minify them
+    => serve them
+- put all templates into the Angular template cache
+    => trick is to build .js files that has our templates in them
+
+
+5. Gulp
+- gulp is a module: npm install gulp --save-dev
+- you name a task, and provide a callback function to be executed when you call that task:
+- create a 'gulpfile.js' in the root level of your app:
+    var gulp = require('gulp');
+
+    gulp.task('default', function() {
+      // place code for your default task here
+    });
+
+    gulp.task('anotherTask', function() {
+      // code here
+    });
+- gulp is stream based: you always provide what's your input & output stream
+- gulp is programatical, grunt is config file based
+- if a task depends on another: you can add middleware type array of tasks:
+    => gulp.task('javascripts', ['html'], function() { ... })
+    => the issue is that the 'javascript' task  will NOT WAIT until 'html' task is done
+    => the way to solve this is to RETURN the gulp object:
+        return gulp.src(...);
+    => so basically always return, that way it's like a promise and things will wait
+
+
+6. gulp-concat
+- npm install gulp-concat --save-dev
+- concatenates all files into one
+- .pipe(concat('all.js')):
+    gulp.task('scripts', function() {
+        return gulp.src('./lib/*.js')       <== take these files
+            .pipe(concat('all.js'))         <== concat them into this
+            .pipe(gulp.dest('./dist/'));    <== copy all.js into here
+        });
+- but order is important for concat (ie: Angular app.js HAS TO come first):
+    => just modify the .src() order:
+        gulp.src([
+            './lib/app.js',
+            ./lib/*.js'
+        ])
+    => so we have the ability to control the order
+
+
+7. gulp-uglify
+- npm install gulp-uglify --save-dev
+- removes all new lines and replaces params & variables with shorter ones
+- .pipe(uglify())
+- we always go through .pipe(): this is where you say what's the next asynch task
+- so the pipes are all asynch tasks
+- but uglify will shorten all parameter names:
+    => so $locationProvider etc will all be uglified: Angular won't work no more
+    => remedy: use gulp-ng-annotate before calling uglify()
+
+
+8. gulp-ng-annotate
+- npm install gulp-ng-annotate --save-dev
+- replaces Angular injections with the array (minification proof) type one:
+    => app.run(["AuthSvc", function(AuthSvc)])
+- .pipe(annotate())
+    => put this before .pipe(uglify())
+
+
+9. gulp-angular-templatecache
+- npm install gulp-angular-templatecache --save-dev
+- concatenates and registers Angular templates
+- .pipe(templateCache()):
+    gulp.task('default', function () {
+      return gulp.src('templates/**/*.html')
+        .pipe(templateCache())
+        .pipe(gulp.dest('public'));
+    });
+- this just creates a new file 'templates.js' and then populates this with some JS code:
+    $templateCache.put("/templates/people.html", "...html content here...");
+- you also need to specify the module name in options, ie in: templateCache(filename, options)
+
+
+10. gulp-rimraf
+- npm install gulp-rimraf --save-dev
+- deep delete of a folder (rm -rf basically)
+- .pipe(rimraf())
+    gulp.src('temp')
+        .pipe(rimraf())
+
+
+11. npm postinstall
+- use this npm script to run your gulp tasks after Heroku installation!
+- add this to package.json:
+    "scripts": {
+        "postinstall": "gulp javascripts"
+    }
+- so this is where you put your tasks to run
+
+
+12. mocha & chai
+- more popular than Jasmine for server side testing
+- allows better assertion testing than Jasmine
+- both Jasmine & mocha have server side implementation
+    => you will end up using one of them
+- mocha doesn't have any 'expect()' method
+    => use chai for that: var chai = require('chai').expect;
+- with 'chai' the syntax is slightly different:
+    it('exists', function() {
+      expect(Thing).to.be.defined;
+    });
+
+    it('rock is in database', function(){
+      expect(rock.name).to.eq('Rock');
+    });
+- how to start the tests:
+    => NODE_ENV=test node ./node_modules/.bin/mocha test/**/*.js
+    => put this into npm "test" script & just run 'npm test'
+
+
+13. supertest-as-promised
+- this is how you test the whole application
+- kinda like end-to-end testing
+- you MUST export your express app first:
+    => module.exports = app;    <==  add this to express's app.js
+- you can now test out your API endpoints, for example:
+  describe('/things', function(){
+    it('returns a list of things', function(){
+      return agent.get('/api/things')
+        .expect(200)
+        .expect(function(res){
+          var things = res.body;
+          expect(things[0].name).to.eq('Paper');
+        });
+    });
+  });
+- 'agent' becomes your app:
+    => var agent = require('supertest-as-promised').agent(require('../../app'));
+    => now i can make GET & POST requests:
+        return agent.get('/api/things/' + rock._id)
+          .expect(200)
+
+        return agent
+          .post('/api/things/' + rock._id)
+          .send({name: 'Roc', price: 1.25})
+          .set(authToken)
+          .expect(200)  
+- so this is how you do full application testing!
+
+
+14. Tips
+- by default, env = 'development' (on c9 as well)
+    => but on Heroku for example, env = 'production'
+- you can add this to layout.jade
+    if env == 'development'
+      script(/javascript/app.js)    <== DEV app.js
+      ...
+    if env == 'production'          <== PROD app.js (minified, uglified, etc)
+      script(/app.js)
+- another good idea is to create a /production folder, and put stuff in there
+    => change express's app.js into this:
+        if (app.get('env') == 'production') {
+            app.use(express.static(path.join(__dirname, 'production')));    <== now on PROD env, we serve stuff from here
+        }
+- if you can't find something, you can just execute it from /node_modules:
+    => ./node_modules/gulp/bin/gulp.js default
+- once you create a MongoDB on Mongolabs (for example):
+    => heroku config:set CONN=mongodb://USER:PASS@DBURL
+    => you can verify on heroku.com => Settings that there is a 'CONN' config variable with this value
+- you should add another config variable for the SECRET (for the tokens)
+- key to getting better is to really understand promises & promise libraries
+- tip: look at the number of downloads of a given module/package IN THE LAST DAY
+    => if it's in the 1000s, use it
+    => if it's like 2, forget it
+- tip: start with your expect(...) when writing test cases:
+    => easier to hash out what you want to test that way
+    => bottom up
+- tip: you can add additional methods to your mongoose models:
+    => this is done via 'statics' on your mongoose schema
+    => ThingSchema.statics.findAll = function() {
+           return this.find().sort('name');     <== 'this' refers to mongoose schema here!
+       }
+    => now I can use Thing.findAll()
+    => this method is available on the 'class', not on the thing instance
+- tip: you can also add methods to the instances:
+    => this is done via 'methods' on your mongoose schema
+    => ThingSchema.methods.isAvailable = function() {
+           return this.available;       <== 'this' refers to the thing instance here!
+    }
+- tip: there are sites that offer continuous integration:
+    => you can say: I want you to run my test suite every time I push stuff into my github
+    => they have an integration with github
+    => examples: circleci, codeship
+- coffeescript:
+    => language that compiles into javascript
+    => forces you to have better coding practices
+    => adds additional features that javascript doesn't have
+    => prevents you from bad practices like putting something into the global namespace
+    => it's basically sugar on top of javascript
+    => gulp has gulp-coffee to compile .coffee files into .js files
+    => coffeescript.org

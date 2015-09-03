@@ -1,6 +1,6 @@
 CLASS #13
 
-files: nyu-mean-back-class-13  (forked from: https://github.com/ericpkatz/week-12-9053-summer.git)
+files: nyu-mean-back-class-13  (forked from: https://github.com/ericpkatz/week-13-ce-9053-summer.git)
 
 1. Topics:
     => authentication
@@ -154,6 +154,24 @@ files: nyu-mean-back-class-13  (forked from: https://github.com/ericpkatz/week-1
         router.post(":id/delete", checkAuthentication, function(req, res) {
             Thing.remove(...);
         });
+- even better is to NOT put the token onto the URL as a request param, but rather onto the request HEADER:
+    => on the Angular service:
+        $http({
+            method: 'POST',
+            url: "/api/things/" + thing._id + "/delete",
+            headers: AuthSvc.getHeaders()   <==  this is simply: { 'Auth' : getToken() }
+        })
+    => now on the middleware: replace req.params.token with req.headers.auth:
+        function checkAuthentication(req, res, next){
+           try{
+              jwt.decode(req.headers.auth, process.env.SECRET || 'foo');
+              next();
+           }
+           catch(ex){
+             res.status(401).send("not authorized"); 
+           }
+        }
+    => see nyu-mean-back-class-14: auth_svc.js & thing_svc.js
 
 
 7. Tips
