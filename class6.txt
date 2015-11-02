@@ -125,31 +125,3 @@ var Thing = mongoose.model("thing", thingSchema);
     => var newThing = new Thing({name: Math.random().toString()});
     => newThing.save([optional callback to do right after the save]);
     => OR via promises:  newThing.save().then(function(result) { ... });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
