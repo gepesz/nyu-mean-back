@@ -74,22 +74,3 @@ CLASS #2
 	=> gets listed in this order in karma.conf.js
 - /* globals describe it expect FizzBuzz */:
 	=> add this into the top of the _spec.js to get rid off the annoying warnings!
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
