@@ -211,20 +211,3 @@ PersonDB.prototype = {
 		return _.find(this.people, {id: id});
 	}
 - lodash.com
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
