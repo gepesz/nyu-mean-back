@@ -71,7 +71,7 @@ CLASS #6
     => starts the mongo process (daemon)
     => gives you a port number
     => mongod --nojournal: means don't keep track of changes (uses less memory)
-    => mongod --nojournal --repair: repair yourself in case of errors (you need to restart if after!)
+    => mongod --nojournal --repair: repair yourself in case of errors (you need to restart it after!)
 - mongo: start interacting with mongod on the console (CLI for mongoDB):
     => you can see on the mongod window that the nof connections went up
     => anything i do here will be recorded to disk so i have everything next time also
