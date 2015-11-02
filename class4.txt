@@ -116,9 +116,3 @@ function otherFunc(args) {...}
 		* module.exports = function(firstName, lastName) {
 			return new Person(firstName, lastName);
 		};
-
-
-
-
-
-
