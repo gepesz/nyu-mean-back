@@ -26,7 +26,7 @@ CLASS #6
 - what we need to do is to tell beforeEach() to wait until my callback is done:
     => this is done by using the function that gets passed to beforeEach()
     => this function is usually called 'done'
-    => if you pass 'done' to beforeEach and you don't call it, it times out after 5 seconds
+    => if you pass 'done' to beforeEach and if you don't call it, it times out after 5 seconds
     => so we must call this function explicitly after we are ready to proceed:
           beforeEach(function(done) {
              var foo = new Foo("bizz");
