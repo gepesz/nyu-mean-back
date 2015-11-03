@@ -79,7 +79,7 @@ files: nyu-mean-back-class-9  (forked from: https://github.com/ericpkatz/ce-9053
 
 
 4. Middleware
-- it would be nice to be able to say this something that's called many times:
+- it would be nice to be able to say for something that's called many times:
     app.post("/things/:id", findThingById, function(req, res) {
               ^^^ request   ^^^ middleware  ^^^ response
     => the middleware indeed does get called after the request has been made!
