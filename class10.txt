@@ -51,6 +51,7 @@ files: nyu-mean-back-class-10  (forked from: https://github.com/ericpkatz/ce-905
         link(rel="stylesheet" href="/vendor/bootstrap/dist/css/bootstrap.css")
 
 - install angular
+    bower install angular
     now I can include angular on my index.jade:
         script(src="/vendor/angular/angular.js")
     => we can test whether this installed well:
