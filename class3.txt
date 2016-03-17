@@ -92,7 +92,7 @@ Person.prototype = {
 	sayHi: function() {
 		console.log("Hello my name is " + this.fullName());
 	}
-}
+};
 
 console.log(prof.fullName == owen.fullName);	<= returns true now, because 2 different objects share the same function prototype
 
