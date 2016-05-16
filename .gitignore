@@ -1,0 +1,8 @@
+# Ignore Node & Vendor
+#####################
+node_modules
+vendor
+
+# Ignore logs
+#############
+.log

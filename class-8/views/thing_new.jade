@@ -1,0 +1,20 @@
+extends layout
+block content
+    a(href="/things") Back to list
+    h3
+        if ( req.url === "/things/new?error=1" )
+            .alert.alert-danger Name cannot be empty
+        else if ( req.url === "/things/new?error=2" )
+            .alert.alert-danger Duplicate name
+    form.form(method="POST")
+        .form-group
+            label.control-label(for="thing_name") Name
+            input.form-control#thing_name(name="name", placeholder="Thing name")
+        .form-group
+            label
+                input(name="active", type="checkbox", checked)
+                &nbsp;Active
+        .form-group
+            button.btn.btn-primary(type="submit")
+                | Save
+        

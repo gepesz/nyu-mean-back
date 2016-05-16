@@ -1,0 +1,23 @@
+extends layout
+block content
+    if messages.info
+        .alert.alert-info
+            button.close(data-dismiss="alert" type="button")
+                | &times;
+            = messages.info
+            
+    a(href="/things/new") 
+        | Create a new thing
+    ul
+        each thing in things
+            li 
+                a(href="/things/#{thing._id}")
+                    =thing.name
+                br    
+                a(href="/things/#{thing._id}")
+                   | Edit 
+                    
+                
+    if things.length == 0
+        .alert.alert-danger
+            | There are no things!

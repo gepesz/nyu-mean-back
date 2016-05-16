@@ -1,0 +1,19 @@
+html
+    head
+        link(href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css", rel="stylesheet")
+        title My title goes here...
+    body
+        ul.nav.nav-tabs
+            li.active
+                a(href="/") Home
+            li
+                a(href="/things") Thing
+            li 
+                a(href="/people") People
+        h1 Welcome to My World!
+        .container
+            .well People page
+            ul.list-group
+                each person in people
+                    li.list-group-item
+                        = person.name

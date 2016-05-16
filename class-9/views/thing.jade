@@ -1,0 +1,24 @@
+extends layout
+block content
+    a(href="/things") Back to list
+    h1 
+        =thing.name
+        
+    if error
+        .alert.alert-danger
+            =error
+        
+    form.form(method="POST")
+        div.form-group
+            label(for="thing_name") Name
+            input.form-control#thing_name(name="name" value=thing.name)
+        div
+            button.btn.btn-primary(type="submit")
+                | Save
+    if !thing.isNew
+        form.form(method="POST", action="/things/#{thing._id}/delete")
+            div
+                button.btn.btn-warning(type="submit")
+                    | Delete
+        
+                
